@@ -2,12 +2,9 @@ require "spec_helper"
 require "timeout"
 
 describe "Tokenizer" do
-  let(:parser) { @context["handlebars"] }
-  let(:lexer) { @context["handlebars"]["lexer"] }
+  let(:parser) { Handlebars::Spec::PARSER_CONTEXT["handlebars"] }
+  let(:lexer) { Handlebars::Spec::PARSER_CONTEXT["handlebars"]["lexer"] }
 
-  before(:all) do
-    @compiles = true
-  end
   Token = Struct.new(:name, :text)
 
   def tokenize(string)
@@ -235,6 +232,10 @@ describe "Tokenizer" do
     result = tokenize(%|{{ foo 1 }}|)
     result.should match_tokens(%w(OPEN ID INTEGER CLOSE))
     result[2].should be_token("INTEGER", "1")
+
+    result = tokenize(%|{{ foo -1 }}|)
+    result.should match_tokens(%w(OPEN ID INTEGER CLOSE))
+    result[2].should be_token("INTEGER", "-1")
   end
 
   it "tokenizes booleans" do

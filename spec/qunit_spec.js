@@ -571,6 +571,16 @@ test("simple literals work", function() {
   }};
   shouldCompileTo(string, [hash, helpers], "Message: Hello world 12 times: true false", "template with a simple String literal");
 });
+test("negative number literals work", function() {
+  var string   = 'Message: {{hello -12}}';
+  var hash     = {};
+  var helpers  = {hello: function(times) {
+    if(typeof times !== 'number') { times = "NaN"; }
+    return "Hello " + times + " times";
+  }};
+  shouldCompileTo(string, [hash, helpers], "Message: Hello -12 times", "template with a negative integer literal");
+});
+
 
 test("using a quote in the middle of a parameter raises an error", function() {
   shouldThrow(function() {
@@ -617,6 +627,12 @@ test("constructing a safestring from a string and checking its type", function()
   var safe = new Handlebars.SafeString("testing 1, 2, 3");
   ok(safe instanceof Handlebars.SafeString, "SafeString is an instance of Handlebars.SafeString");
   equal(safe, "testing 1, 2, 3", "SafeString is equivalent to its underlying string");
+});
+
+test("it should not escape SafeString properties", function() {
+  var name = new Handlebars.SafeString("<em>Sean O&#x27;Malley</em>");
+
+  shouldCompileTo('{{name}}', [{ name: name }], "<em>Sean O&#x27;Malley</em>");
 });
 
 suite("helperMissing");
@@ -1354,7 +1370,7 @@ test("bug reported by @fat where lambdas weren't being properly resolved", funct
 test("Passing falsy values to Handlebars.compile throws an error", function() {
   shouldThrow(function() {
     CompilerContext.compile(null);
-  }, "You must pass a string or Handlebars AST to Handlebars.compile. You passed null");
+  }, "You must pass a string or Handlebars AST to Handlebars.precompile. You passed null");
 });
 
 test('GH-408: Multiple loops fail', function() {
@@ -1367,4 +1383,17 @@ test('GH-408: Multiple loops fail', function() {
 
   var result = template(context);
   equals(result, "John DoeJane DoeJohn DoeJane DoeJohn DoeJane Doe", 'It should output multiple times');
+});
+
+test('GS-428: Nested if else rendering', function() {
+  var succeedingTemplate = '{{#inverse}} {{#blk}} Unexpected {{/blk}} {{else}}  {{#blk}} Expected {{/blk}} {{/inverse}}';
+  var failingTemplate = '{{#inverse}} {{#blk}} Unexpected {{/blk}} {{else}} {{#blk}} Expected {{/blk}} {{/inverse}}';
+
+  var helpers = {
+    blk: function(block) { return block.fn(''); },
+    inverse: function(block) { return block.inverse(''); }
+  };
+
+  shouldCompileTo(succeedingTemplate, [{}, helpers], '   Expected  ');
+  shouldCompileTo(failingTemplate, [{}, helpers], '  Expected  ');
 });
